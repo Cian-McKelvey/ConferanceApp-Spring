@@ -2,6 +2,7 @@ package com.pluralsight.conferencedemo.controllers;
 
 import com.pluralsight.conferencedemo.models.Session;
 import com.pluralsight.conferencedemo.repositories.SessionRepository;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -27,8 +28,32 @@ public class SessionsController {
     @RequestMapping("{id}") // Adds id to the class RequestMapping url, gets specific objects (/api/v1/sessions/{id})
     @ResponseStatus(HttpStatus.FOUND) // Added to return the correct Http Response, returns 200's otherwise
     public Session get(@PathVariable Long id) {
-        // Tutorial uses getOne method, but it is depreciated, this method returns a reference, not the actual object
-        return sessionRepository.getReferenceById(id);
+        return sessionRepository.getOne(id);
+    }
+
+    @PostMapping // Uses a http post request. No need for request mapping
+    // Annotation means that the object returned is changed to json and passed back
+    public Session create(@RequestBody final Session session) {
+        // saves and stores to database, flush part means it actually gets added to the database, won't work just saving
+        return sessionRepository.saveAndFlush(session);
+    }
+
+    @DeleteMapping("{id}") // Http delete request
+    public void delete(@PathVariable Long id) {
+        // Doesn't delete any children records at this time
+        sessionRepository.deleteById(id);
+    }
+
+    /*
+    NOTE: PUT changes all the attributes, PATCH only changes the ones you put in to be changed
+    Because this is a put, we need all attributes passed so the data must be validated
+    */
+    @RequestMapping(value = "{id}", method = RequestMethod.PUT) // Requiring the id on the url, and the HTTP put method
+    public Session update(@PathVariable Long id, @RequestBody Session session) {
+        Session existingSession = sessionRepository.getOne(id); // Finding the record by id
+        // Need to validate this incoming data
+        BeanUtils.copyProperties(session, existingSession, "session_id");
+        return sessionRepository.saveAndFlush(existingSession);
     }
 
 }
